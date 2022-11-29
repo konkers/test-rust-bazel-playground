@@ -1,0 +1,17 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_binary(
+    name = "qemu-hello",
+    srcs = ["src/main.rs"],
+    data = ["memory.x"],
+    edition = "2021",
+    linker_script = "link.x",
+    deps = [
+        "@crates//:cortex-m",
+        "@crates//:cortex-m-rt",
+        "@crates//:cortex-m-semihosting",
+        "@crates//:panic-halt",
+    ],
+)

@@ -1,4 +1,51 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+#
+# Set up embedded C/C++ toolchains setup.  Copied from Pigweed.
+#
+
+git_repository(
+    name = "bazel_embedded",
+    commit = "17c93d5fa52c4c78860b8bbd327325fba6c85555",
+    remote = "https://github.com/bazelembedded/bazel-embedded.git",
+    shallow_since = "1631751909 +0800",
+)
+
+# Configure bazel_embedded toolchains and platforms.
+load(
+    "@bazel_embedded//:bazel_embedded_deps.bzl",
+    "bazel_embedded_deps",
+)
+
+bazel_embedded_deps()
+
+load(
+    "@bazel_embedded//platforms:execution_platforms.bzl",
+    "register_platforms",
+)
+
+register_platforms()
+
+# Fetch gcc-arm-none-eabi compiler and register for toolchain
+# resolution.
+load(
+    "@bazel_embedded//toolchains/compilers/gcc_arm_none_eabi:gcc_arm_none_repository.bzl",
+    "gcc_arm_none_compiler",
+)
+
+gcc_arm_none_compiler()
+
+load(
+    "@bazel_embedded//toolchains/gcc_arm_none_eabi:gcc_arm_none_toolchain.bzl",
+    "register_gcc_arm_none_toolchain",
+)
+
+register_gcc_arm_none_toolchain()
+
+#
+# Rust Support
+#
 
 http_archive(
     name = "rules_rust",
@@ -6,12 +53,34 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.13.0/rules_rust-v0.13.0.tar.gz"],
 )
 
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")
 
 rules_rust_dependencies()
 
-rust_register_toolchains(
+# Here we pull in a specific toolchain.  Unfortunatly `rust_repository_set`
+# does not provide a way to add `target_compatible_with` options which are
+# needed to be compatible with `@bazel_embedded` (specifically
+# `@bazel_embedded//constraints/fpu:none` which is specified in
+# `//platforms`)
+#
+# See `//toolchain:rust_linux_x86_64` for how this is used.
+#
+# Note: This statement creates name mangled remotes of the form:
+# `@{name}__{triplet}_tools`
+# (example: `@rust_linux_x86_64__thumbv7m-none-eabi_tools/`)
+rust_repository_set(
+    name = "rust_linux_x86_64",
     edition = "2021",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    extra_target_triples = [
+        "thumbv7m-none-eabi",
+    ],
+    version = "1.65.0",
+)
+
+# Registers our "fixed up toolchain"
+register_toolchains(
+    "//toolchain:rust_linux_x86_64",
 )
 
 load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
@@ -20,6 +89,8 @@ crate_universe_dependencies(bootstrap = True)
 
 load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "splicing_config")
 
+# Declare third party crates we use.  There are several ways to do this
+# and this is likely not the most maintainable way.
 crates_repository(
     name = "crates",
     cargo_lockfile = "//crate_manifests:Cargo.Bazel.lock",
@@ -27,6 +98,18 @@ crates_repository(
     packages = {
         "anyhow": crate.spec(
             version = "1.0.66",
+        ),
+        "cortex-m": crate.spec(
+            version = "0.6.0",
+        ),
+        "cortex-m-rt": crate.spec(
+            version = "0.6.10",
+        ),
+        "cortex-m-semihosting": crate.spec(
+            version = "0.3.3",
+        ),
+        "panic-halt": crate.spec(
+            version = "0.2.0",
         ),
     },
     splicing_config = splicing_config(
@@ -41,6 +124,15 @@ load(
 
 crates_crate_repositories()
 
+# Allows creation of a `rust-project.json` file to allow rust analyzer to work.
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+
+# Since we do not use rust_register_toolchains, we need to define a
+# rust_analyzer_toolchain.
+register_toolchains(rust_analyzer_toolchain_repository(
+    name = "rust_analyzer_toolchain",
+    # This should match the currently registered toolchain.
+    version = "1.65.0",
+))
 
 rust_analyzer_dependencies()

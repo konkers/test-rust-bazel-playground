@@ -1,0 +1,8 @@
+platform(
+    name = "lm3s6965evb",
+    constraint_values = [
+        "@platforms//cpu:armv7-m",
+        "@bazel_embedded//constraints/fpu:none",
+        "@platforms//os:none",
+    ],
+)
