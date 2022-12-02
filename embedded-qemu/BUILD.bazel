@@ -9,9 +9,9 @@ rust_binary(
     edition = "2021",
     linker_script = "link.x",
     deps = [
-        "@crates//:cortex-m",
-        "@crates//:cortex-m-rt",
-        "@crates//:cortex-m-semihosting",
-        "@crates//:panic-halt",
+        "@third_party_crates//vendor/crates:cortex-m",
+        "@third_party_crates//vendor/crates:cortex-m-rt",
+        "@third_party_crates//vendor/crates:cortex-m-semihosting",
+        "@third_party_crates//vendor/crates:panic-halt",
     ],
 )

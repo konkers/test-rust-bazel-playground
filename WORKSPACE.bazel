@@ -83,47 +83,6 @@ register_toolchains(
     "//toolchain:rust_linux_x86_64",
 )
 
-load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
-
-crate_universe_dependencies(bootstrap = True)
-
-load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "splicing_config")
-
-# Declare third party crates we use.  There are several ways to do this
-# and this is likely not the most maintainable way.
-crates_repository(
-    name = "crates",
-    cargo_lockfile = "//crate_manifests:Cargo.Bazel.lock",
-    lockfile = "//crate_manifests:cargo-bazel-lock.json",
-    packages = {
-        "anyhow": crate.spec(
-            version = "1.0.66",
-        ),
-        "cortex-m": crate.spec(
-            version = "0.6.0",
-        ),
-        "cortex-m-rt": crate.spec(
-            version = "0.6.10",
-        ),
-        "cortex-m-semihosting": crate.spec(
-            version = "0.3.3",
-        ),
-        "panic-halt": crate.spec(
-            version = "0.2.0",
-        ),
-    },
-    splicing_config = splicing_config(
-        resolver_version = "2",
-    ),
-)
-
-load(
-    "@crates//:defs.bzl",
-    crates_crate_repositories = "crate_repositories",
-)
-
-crates_crate_repositories()
-
 # Allows creation of a `rust-project.json` file to allow rust analyzer to work.
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 
@@ -136,3 +95,10 @@ register_toolchains(rust_analyzer_toolchain_repository(
 ))
 
 rust_analyzer_dependencies()
+
+git_repository(
+    name = "third_party_crates",
+    commit = "ae3a45eecc2cdcff687e6ae1d43053029125e597",
+    remote = "sso://user/konkers/third_party_crates",
+    shallow_since = "1669940698 +0000",
+)
