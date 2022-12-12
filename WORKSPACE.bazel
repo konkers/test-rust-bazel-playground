@@ -6,8 +6,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 # Used in modules: All cc targets.
 git_repository(
     name = "rules_cc_toolchain",
-    commit = "d9a0905534f06a05c4b59b3e929778c1a97859c3",
-    remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
+    commit = "ae0227bf0b7a67fb71261353c788edf289745770",
+    remote = "https://github.com/konkers/rules_cc_toolchain.git",
 )
 
 load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
@@ -125,6 +125,6 @@ rust_analyzer_dependencies()
 git_repository(
     name = "third_party_crates",
     commit = "ae3a45eecc2cdcff687e6ae1d43053029125e597",
-    remote = "sso://user/konkers/third_party_crates",
+    remote = "https://github.com/konkers/test-third-party-crates",
     shallow_since = "1669940698 +0000",
 )
